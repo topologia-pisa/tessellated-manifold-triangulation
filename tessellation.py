@@ -68,9 +68,9 @@ Triangulation5.get_simplicial_complex = simplicial_complex_from_triangulation
 class Tesselleted_manifold:
     def __init__(self, polytope, indices, pasting_map):
         """
-        Crea una varietà tassellata con copie del politopo polytope indicizzate da indices.
-        pasting_map è una mappa che associa a ogni faccetta una coppia (politopo della tassellazione, isometria di incollamento),
-        e None se è una faccetta di bordo.
+        Builds a manifold tesselleted with copies of polytope, which are indexed by indices.
+        pasting_map takes a facet as input and must return a 2-uple (glued polytope, isomorphism),
+        and None if it is a boundary facet.
         """
         self.polytope_class = polytope
         self.polytopes = {}
@@ -95,6 +95,11 @@ class Tesselleted_manifold:
                     f.paste(target_p, iso)
 
     def get_quotient(self, isometry_group):
+        """
+        Returns the quotient of the manifold by a given isometry group.
+        If the manifold has boundary (for finiteness reasons) there must be at least a representative of each
+        orbit in the interior.
+        """
         representatives = []
         for p in self.polytopes.values():
             p.identification = None
@@ -119,7 +124,10 @@ class Tesselleted_manifold:
 
 class Tesselleted_manifold_isometry:
     def __init__(self, manifold, start_pol=None, end_pol=None, iso=None, images=None, isos=None):
-
+        """
+        Defines an isometry of a manifold that sends a polytope in another with a given isomorphism.
+        If more are provided, fewer computations are needed.
+        """
         self.manifold = manifold
 
         if start_pol is not None:
@@ -179,6 +187,10 @@ class Tesselleted_manifold_isometry:
 
 class Tesselleted_manifold_isometry_group:
     def __init__(self, *generators, iterations=-1):
+        """
+        Computes the isometry group given some generators.
+        If iterations is provided, stops after the corresponding number of iterations.
+        """
         new_elements = list(generators)
         id = generators[0]*generators[0].inverse()
         if id not in new_elements:

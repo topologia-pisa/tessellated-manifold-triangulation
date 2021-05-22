@@ -11,7 +11,7 @@ class P5_iso:
         # Definisce un isomorfismo di P5 che permuta le componenti e fa una riflessione.
         if len(refl)==4:
             refl.append(product(refl))
-        assert len(refl)==5 and product(refl)==1, "Riflessione non valida"
+        assert len(refl)==5 and product(refl)==1, "Invalid reflection"
         self.refl = refl
 
         if isinstance(perm, Perm4):

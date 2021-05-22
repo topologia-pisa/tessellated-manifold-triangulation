@@ -66,7 +66,9 @@ def get_minimal_quotient():
             assert state_in == (new_f.label in {1, I, J, K}), (facet.label, new_f.label)
             return (new_p, iso)
 
-    minimal_quotient = Tesselleted_manifold(P5, [(-1, I), (-1, -I), (0, 1), (0, -1), (1, I), (1, -I), (2, 1), (2, -1)], pasting_map_minimal_quotient)
+    mnf = Tesselleted_manifold(P5, [(-1, I), (-1, -I), (0, 1), (0, -1), (1, I), (1, -I), (2, 1), (2, -1)], pasting_map_minimal_quotient)
+    isom = Tesselleted_manifold_isometry(mnf, mnf.polytopes[(0,1)], mnf.polytopes[(1, I)], quotienting_iso)
+    return mnf.get_quotient(Tesselleted_manifold_isometry_group(isom))
 
 
 def get_M5_cyclic_covering():
