@@ -189,7 +189,10 @@ class Tesselleted_manifold_isometry_group:
     def __init__(self, *generators, iterations=-1):
         """
         Computes the isometry group given some generators.
+        Each iteration checks if the product of every pair of elements is already in the group,
+        and if not adds it, until no more new elements can be found.
         If iterations is provided, stops after the corresponding number of iterations.
+        It can also be stopped by pressing Ctrl-C, if you are sure that every element is already been found.
         """
         new_elements = list(generators)
         id = generators[0]*generators[0].inverse()
@@ -207,18 +210,20 @@ class Tesselleted_manifold_isometry_group:
         signal.signal(signal.SIGINT, sigint_handler)
         print("Computing isometry group... Press Ctrl-C to terminate early.")
         while new_elements and iterations != 0 and not interrupted:
+            if self.elements != []:
+                print("Moving to next iteration...")
             iterations -= 1
             found = []
             for a, b in itertools.product(self.elements + new_elements, new_elements):
                 c = a*b.inverse()
                 if c is not None and c not in self.elements + new_elements + found:
                     found.append(c)
-                    print("Found {} new elements...".format(len(found)), end="\r")
+                    print("Found {} new elements, total {}...".format(len(found), len(found) + len(self.elements) + len(new_elements)), end="\r")
                 if interrupted:
                     break
             self.elements += new_elements
             new_elements = found
-            print("Found {num} new elements, total {tot}...".format(num=len(new_elements), tot = len(self.elements)+len(new_elements)))
+            print("Found {num} new elements, total {tot}.  ".format(num=len(new_elements), tot = len(self.elements)+len(new_elements)), end="\b")
         print('Done.')
         signal.signal(signal.SIGINT, original_sigint_handler)
         self.elements += new_elements

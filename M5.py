@@ -6,6 +6,9 @@ from sage.all import QuaternionAlgebra, Matrix
 
 
 def get_S5():
+    """
+    Returns a 5-dimensional sphere, using two copies of P5 glued via identity.
+    """
     def pasting_map_sphere(facet):
         p = facet.pol
         manifold = p.manifold
@@ -15,6 +18,9 @@ def get_S5():
     return Tesselleted_manifold(P5, [0,1], pasting_map_sphere)
 
 def get_M5():
+    """
+    Returns the manifold obtained with 2^8 copies of P5, induced by the coloring of P5 with 8 colors.
+    """
     def pasting_map_M5(facet):
         p = facet.pol
         manifold = p.manifold
@@ -25,21 +31,21 @@ def get_M5():
 
     return Tesselletde_manifold(P5, [x for x in itertools.product(*[[0,1]]*8)], pasting_map_M5)
 
-# Isometrie date da Q8
+# Action of Q_8 on P5
 q8_iso = {1: P5_iso(), -1: P5_iso([-1, -1, -1, -1]), I: P5_iso([1, -1, 1, -1], Perm4(3, 2, 1, 0)), J: P5_iso([1, -1, -1, 1], Perm4(1, 0, 3, 2))}
 q8_iso[K] = q8_iso[I] * q8_iso[J]
 for i in [I, J, K]:
     q8_iso[-i] = q8_iso[i].inverse()
 
-# Definisco l'isometria che incolla due poliedri di livelli diversi.
+# Isometry which inverts the small cusps of P5
 quotienting_iso = P5_iso(refl=[1, -1, -1, -1], perm=Perm4(0,2,1,3))
 
 def get_minimal_quotient():
-
+    """
+    Constructs a small manifold gluing two copies of P5, using Q8.
+    The result is isomorphic to the manifold constructed by Ratcliffe and Tschantz.
+    """
     def pasting_map_minimal_quotient(facet):
-        """
-        Mappa di incollamento per la varietà con due poliedri.
-        """
         p = facet.pol
         manifold = p.manifold
         level, rotation = p.index
@@ -72,6 +78,10 @@ def get_minimal_quotient():
 
 
 def get_M5_cyclic_covering():
+    """
+    Returns the cyclic covering of M5, given by the choice of a state on
+    each facet of P5.
+    """
     def pasting_map_leveled_M5(facet):
         p = facet.pol
         manifold = p.manifold
@@ -97,19 +107,28 @@ def get_M5_cyclic_covering():
     return Tesselleted_manifold(P5, [x for x in itertools.product(*[[0,1]]*8 + [[1, 0, 2]]) if sum(x) % 2 == 0], pasting_map_leveled_M5)
 
 def get_M5_two_quotient():
+    """
+    Returns the quotient of the cyclic covering of M5 by the action of Q8 and the
+    additional isometry which inverts the two small cusps.
+    The result is isomorphic to the manifold constructed by Ratcliffe and Tschantz.
+    """
     leveled_M5 = get_M5_cyclic_covering()
-    isometries = []
-    isometries.append(Tesselleted_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[(1,1,0,0,1,1,0,0,0)], P5_iso()))
-    isometries.append(Tesselleted_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[(1,0,1,0,1,0,1,0,0)], P5_iso()))
-    isometries.append(Tesselleted_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[(1,0,0,1,1,0,0,1,0)], P5_iso()))
-    isometries.append(Tesselleted_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[(1,0,1,0,0,0,0,0,0)], q8_iso[I]))
-    isometries.append(Tesselleted_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[(1,0,0,1,0,0,0,0,0)], q8_iso[J]))
-    isometries.append(Tesselleted_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[(1,0,0,0,0,0,0,0,1)], quotienting_iso))
+    isometries = [
+        Tesselleted_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[(1,1,0,0,1,1,0,0,0)], P5_iso()),
+        Tesselleted_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[(1,0,1,0,1,0,1,0,0)], P5_iso()),
+        Tesselleted_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[(1,0,0,1,1,0,0,1,0)], P5_iso()),
+        Tesselleted_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[(1,0,1,0,0,0,0,0,0)], q8_iso[I]),
+        Tesselleted_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[(1,0,0,1,0,0,0,0,0)], q8_iso[J]),
+        Tesselleted_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[(1,0,0,0,0,0,0,0,1)], quotienting_iso)
+    ]
     G = Tesselleted_manifold_isometry_group(*isometries, iterations=3)
     return leveled_M5.get_quotient(G)
 
 
 def get_rt_minimal_manifold():
+    """
+    Constructs the manifold described by Ratcliffe and Tschantz.
+    """
     def pasting_map_rt(facet):
         p = facet.pol
         number = facet.number + 16*p.index
