@@ -1,8 +1,8 @@
 import itertools, regina
 from tessellation import Tesselleted_manifold, Tesselleted_manifold_isometry, Tesselleted_manifold_isometry_group
 from regina import Perm4
-from P5 import P5, P5_iso, I, J, K
-from sage.all import QuaternionAlgebra
+from P5 import P5, P5_iso, I, J, K, rt
+from sage.all import QuaternionAlgebra, Matrix
 
 
 def get_S5():
@@ -107,3 +107,25 @@ def get_M5_two_quotient():
     isometries.append(Tesselleted_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[(1,0,0,0,0,0,0,0,1)], quotienting_iso))
     G = Tesselleted_manifold_isometry_group(*isometries, iterations=3)
     return leveled_M5.get_quotient(G)
+
+
+def get_rt_minimal_manifold():
+    def pasting_map_rt(facet):
+        p = facet.pol
+        number = facet.number + 16*p.index
+        target_number = rt["mappings"][number]
+        def get_matrix(i,j):
+            standard_reflection = p.facets[(-1, 1, -1, -1, -1)].reflection_matrix
+            return p.facet_from_number(j % 16).reflection_matrix * \
+                (standard_reflection if j >= 16 else Matrix.identity(6)) * \
+                Matrix(rt["pasting_matrices"][str(i)]) * \
+                (standard_reflection if i >= 16 else Matrix.identity(6))
+
+        m = get_matrix(number, target_number) if str(number) in rt["pasting_matrices"] else get_matrix(target_number, number).inverse()
+        try:
+            iso = P5_iso.from_lorentzian_matrix(m)
+        except ValueError:
+            raise Exception("Cannot paste {} to {}".format(number, target_number))
+        return (p.manifold.polytopes[1 if target_number >= 16 else 0], iso)
+
+    return Tesselleted_manifold(P5, [0,1], pasting_map_rt)

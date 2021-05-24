@@ -1,10 +1,14 @@
-import itertools
-from sage.all import product, QuaternionAlgebra
+import itertools, json, os, sys
+from sage.all import product, QuaternionAlgebra, Matrix, Permutation, vector
 from regina import Perm4, Perm5, Perm6, Triangulation5
 
 Quaternions = QuaternionAlgebra(-1, -1)
 I,J,K = Quaternions.gen(0), Quaternions.gen(1), Quaternions.gen(2)
 
+with open(os.path.join(sys.path[0], 'ratcliffe-tschantz.json')) as f:
+    rt = json.load(f)
+    for m in rt["pasting_matrices"].values():
+        assert Matrix(m).transpose() * Matrix.diagonal([1,1,1,1,1,-1]) * Matrix(m) == Matrix.diagonal([1,1,1,1,1,-1]), m
 
 class P5_iso:
     def __init__(self, refl=[1,1,1,1,1], perm=Perm5()):
@@ -26,6 +30,13 @@ class P5_iso:
         # Check composition is the identity
         assert inv * self == P5_iso(), (inv, self)
         return inv
+
+    @classmethod
+    def from_lorentzian_matrix(cls, mat):
+        cusps = [vector({i: 1, 5:1}) for i in range(5)]
+        cusps += [vector([1,1,1,1,1,3]) - x for x in cusps]
+        assert sorted(cusps) == sorted(mat * v for v in cusps)
+        return cls(perm=Perm5(*[cusps.index(mat*v) % 5 for v in cusps[0:5]]))*cls(refl=[1 if mat*v in cusps[0:5] else -1 for v in cusps[0:5]])
 
     def __eq__(self, other):
         return self.perm == other.perm and self.refl == other.refl
@@ -86,6 +97,8 @@ class P5:
             v.inner_simplex.identify_with(iso(v, other_pol).inner_simplex, extended_perm)
             v.outer_simplex.identify_with(iso(v, other_pol).outer_simplex, extended_perm)
 
+    def facet_from_number(self, n):
+        return self.facets[sorted([c for c in self.facets], key=lambda x: sum(x))[n]]
 
 class P5_facet:
     def __init__(self, coords, pol):
@@ -145,6 +158,27 @@ class P5_facet:
             return -dict[tuple(-i for i in x)]
 
     label = property(get_label)
+
+    def get_reflection_matrix(self):
+        if self.coords == (1,1,1,1,1):
+            res = Matrix(rt.get("reflection_matrices")[2])
+        elif sum(self.coords) == 1:
+            perm = Permutation(sorted(range(1,6), key=lambda x: -self.coords[x-1])).inverse()
+            res = Matrix(rt.get("reflection_matrices")[1])
+            res.permute_rows_and_columns(perm,perm)
+        elif sum(self.coords) == -3:
+            perm = Permutation(sorted(range(1,6), key=lambda x: -self.coords[x-1])).inverse()
+            res = Matrix(rt.get("reflection_matrices")[0])
+            res.permute_rows_and_columns(perm,perm)
+        assert res.transpose() * Matrix.diagonal([1,1,1,1,1,-1]) * res == Matrix.diagonal([1,1,1,1,1,-1])
+        return res
+
+    reflection_matrix = property(get_reflection_matrix)
+
+    def get_number(self):
+        return sorted([c for c in self.pol.facets], key=lambda x: sum(x)).index(self.coords)
+
+    number = property(get_number)
 
     def check_state_compatibility(self, other_pol, iso):
         return all(f.state == (not iso(f, other_pol).state) for f in self.facets.values())
