@@ -79,6 +79,11 @@ class P5_facet(AbstractFacet):
         self.simplices[a].join(b, other_facet.simplices[b], Perm6(a,b))
         self.simplices[b].join(a, other_facet.simplices[a], Perm6(a,b))
 
+    def interior_unjoin(self, other_facet):
+        a, b = (i+1 for i in range(5) if self.index[i] != other_facet.index[i])
+        self.simplices[a].unjoin(b)
+        self.simplices[b].unjoin(a)
+
     def exterior_join(self, other_pol, iso):
         target_f = iso(self, other_pol)
         extended_perm = Perm6([1,2,3,4,5,0]) * Perm6.extend(iso.perm) * Perm6([5,0,1,2,3,4])

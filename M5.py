@@ -45,34 +45,32 @@ def get_minimal_quotient():
     Constructs a small manifold gluing two copies of P5, using Q8.
     The result is isomorphic to the manifold constructed by Ratcliffe and Tschantz.
     """
+    def facet_state(facet):
+        if facet.pol.index[0] % 2 == 0:
+            return facet.label in {1, I, J, K}
+        else:
+            return facet.label in {-1, I, J, K}
+
     def pasting_map_minimal_quotient(facet):
         p = facet.pol
         manifold = p.manifold
         level, rotation = p.index
 
         if level % 2 == 0:
-            state_in = facet.label in {-1, -I, -J, -K}
-            if level==2 and state_in:
+            if level==2 and facet.state:
                 return None
             iso = q8_iso[{1: 1, -1: 1, I: J, -I: J, J: K, -J: K, K: I, -K: I}[facet.label]]
-            new_p = manifold.polytopes[(level + (1 if state_in else -1), rotation * (I if facet.index[4] == 1 else -I))]
-            new_f = iso(facet, new_p)
-            # Qualche check di coerenza
-            assert state_in == (new_f.label in {-1, I, J, K}), (facet.label, new_f.label)
+            new_p = manifold.polytopes[(level + (1 if facet.state else -1), rotation * (I if facet.index[4] == 1 else -I))]
             return (new_p, iso)
 
         else:
-            state_in = facet.label in {1, -I, -J, -K}
-            if level==-1 and not state_in:
+            if level==-1 and not facet.state:
                 return None
             iso = q8_iso[{1: 1, -1: 1, I: -K, -I: -K, J: -I, -J: -I, K: -J, -K: -J}[facet.label]]
-            new_p = manifold.polytopes[(level + (1 if state_in else -1), rotation * (-I if facet.index[4] == 1 else I))]
-            new_f = iso(facet, new_p)
-            # Qualche check di coerenza
-            assert state_in == (new_f.label in {1, I, J, K}), (facet.label, new_f.label)
+            new_p = manifold.polytopes[(level + (1 if facet.state else -1), rotation * (-I if facet.index[4] == 1 else I))]
             return (new_p, iso)
 
-    mnf = Tesselleted_manifold(P5, [(-1, I), (-1, -I), (0, 1), (0, -1), (1, I), (1, -I), (2, 1), (2, -1)], pasting_map_minimal_quotient)
+    mnf = Tesselleted_manifold(P5, [(-1, I), (-1, -I), (0, 1), (0, -1), (1, I), (1, -I), (2, 1), (2, -1)], pasting_map_minimal_quotient, facet_state)
     isom = Tesselleted_manifold_isometry(mnf, mnf.polytopes[(0,1)], mnf.polytopes[(1, I)], quotienting_iso)
     return mnf.get_quotient(Tesselleted_manifold_isometry_group(isom))
 

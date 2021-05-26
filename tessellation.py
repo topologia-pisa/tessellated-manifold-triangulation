@@ -177,6 +177,22 @@ class Tesselleted_manifold:
 
         return tri
 
+    def get_fiber(self):
+        for p in self.polytopes.values():
+            for f1, f2, _ in p.facet_graph.edges():
+                if p.facets[f1].state == (not p.facets[f2].state):
+                    p.facets[f1].interior_unjoin(p.facets[f2])
+
+        fibers = [b.build() for b in self.tri.boundaryComponents()]
+        assert all(f.isIsomorphicTo(fibers[0]) for f in fibers)
+        for p in self.polytopes.values():
+            for f1, f2, _ in p.facet_graph.edges():
+                if p.facets[f1].state == (not p.facets[f2].state):
+                    p.facets[f1].interior_join(p.facets[f2])
+        f = fibers[0]
+        f.simplifyExhaustive()
+        return f
+
     def get_quotient(self, isometry_group):
         """
         Returns the quotient of the manifold by a given isometry group.
