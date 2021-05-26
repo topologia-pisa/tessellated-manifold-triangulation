@@ -66,11 +66,12 @@ Triangulation5.get_simplicial_complex = simplicial_complex_from_triangulation
 
 
 class Tesselleted_manifold:
-    def __init__(self, polytope, indices, pasting_map):
+    def __init__(self, polytope, indices, pasting_map, state=None):
         """
         Builds a manifold tesselleted with copies of polytope, which are indexed by indices.
         pasting_map takes a facet as input and must return a 2-uple (glued polytope, isomorphism),
         and None if it is a boundary facet.
+        state, if provided, takes a facet as input and return True if it is pointing outwards, False if inwards.
         """
         self.polytope_class = polytope
         self.polytopes = {}
@@ -82,6 +83,12 @@ class Tesselleted_manifold:
             self.polytopes[i].manifold = self
 
         pasted_facets = {}
+        # Metto gli stati
+        if state is not None:
+            for p in self.polytopes.values():
+                for f in p.facets.values():
+                    f.state = state(f)
+
         # Incollo le faccette
         for p in self.polytopes.values():
             for f in p.facets.values():
@@ -90,7 +97,7 @@ class Tesselleted_manifold:
                     target_f = iso(f, target_p)
                     # Controlla che la mappa di incollamento sia simmetrica
                     assert pasting_map(target_f) == (p, iso.inverse())
-
+                    assert target_f.state is None or target_f.state == (not f.state)
                     # Incollamento
                     f.paste(target_p, iso)
 
@@ -120,8 +127,12 @@ class Tesselleted_manifold:
                 return (m.polytopes[upper_adj_pol.identification(upper_adj_pol).index], upper_adj_pol.identification.isos.get(upper_adj_pol.index) * self.polytopes[p.index].facets[f.coords].joining_iso)
             else:
                 return None
-        return Tesselleted_manifold(self.polytope_class, representatives, facet_mapping)
 
+        def facet_state(f):
+            return self.polytopes[f.pol.index].facets[f.coords].state
+
+        return Tesselleted_manifold(self.polytope_class, representatives, facet_mapping, facet_state)
+        
 class Tesselleted_manifold_isometry:
     def __init__(self, manifold, start_pol=None, end_pol=None, iso=None, images=None, isos=None):
         """

@@ -82,19 +82,21 @@ def get_M5_cyclic_covering():
     Returns the cyclic covering of M5, given by the choice of a state on
     each facet of P5.
     """
+    def facet_state(facet):
+        # Sets the facet's state
+        res = facet.label in {1, I, J, K}
+        if facet.pol.index[facet.color] == 1:
+            res = not res
+        if facet.pol.index[(facet.color + 4) % 8] == 1:
+            res = not res
+        return res
+
     def pasting_map_leveled_M5(facet):
         p = facet.pol
         manifold = p.manifold
         x = list(p.index[0:8])
         level = p.index[8]
 
-        # Sets the facet's state
-        if facet.state is None:
-            facet.state = facet.label in {1, I, J, K}
-            if x[facet.color] == 1:
-                facet.state = not facet.state
-            if x[(facet.color + 4) % 8] == 1:
-                facet.state = not facet.state
         new_level = level + (1 if facet.state else -1)
 
         if new_level not in {0, 1, 2}:
@@ -104,7 +106,7 @@ def get_M5_cyclic_covering():
         x[facet.color] = 1 - x[facet.color]
         return (manifold.polytopes[tuple(x) + (new_level, )], id)
 
-    return Tesselleted_manifold(P5, [x for x in itertools.product(*[[0,1]]*8 + [[1, 0, 2]]) if sum(x) % 2 == 0], pasting_map_leveled_M5)
+    return Tesselleted_manifold(P5, [x for x in itertools.product(*[[0,1]]*8 + [[1, 0, 2]]) if sum(x) % 2 == 0], pasting_map_leveled_M5, facet_state)
 
 def get_M5_two_quotient():
     """
