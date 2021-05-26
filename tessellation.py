@@ -1,6 +1,7 @@
 import regina, itertools, signal
 from regina import Triangulation5
 from regina.engine import Face5_0, Simplex5
+from sage.all import Graph
 
 def get_link(vertex):
     d = vertex.triangulation().dimension
@@ -64,6 +65,69 @@ def simplicial_complex_from_triangulation(triangulation):
 
 Triangulation5.get_simplicial_complex = simplicial_complex_from_triangulation
 
+class AbstractPolytopeIsometry:
+    def inverse(self):
+        raise NotImplementedError("Please implement inverse function in the appropriate subclass.")
+
+    def __eq__(self, other):
+        raise NotImplementedError("Please implement __eq__ function in the appropriate subclass.")
+
+    def __mul__(self, other):
+        raise NotImplementedError("Please implement __mul__ function in the appropriate subclass.")
+
+    def __call__(self, arg, other_pol):
+        """
+        Should return the image of a facet in the polytope other_pol (if omitted, self should be used).
+        """
+        raise NotImplementedError("Please implement __call__ function in the appropriate subclass.")
+
+class AbstractPolytope:
+    dimension = None
+    facet_class = None
+    facet_graph = None
+
+    def __init__(self):
+        self.facets = {i: self.facet_class(i, self) for i in self.facet_graph.vertices()}
+
+    def triangulate(self, tri):
+        for f in self.facets.values():
+            f.triangulate(tri)
+
+        for f1, f2, _ in self.facet_graph.edges():
+            self.facets[f1].interior_join(self.facets[f2])
+
+class AbstractFacet:
+    def __init__(self, index, pol):
+        self.index = index
+        self.pol = pol
+        self.state = None
+        self.adjacent_pol = None
+        self.joining_iso = None
+
+    def triangulate(self, tri):
+        """
+        Constructs a triangulation of the cone on the facet.
+        """
+        raise NotImplementedError()
+
+    def interior_join(self, other_facet):
+        """
+        Joins the triangulation with another facet in the same polytope.
+        """
+        raise NotImplementedError()
+
+    def interior_unjoin(self, other_facet):
+        """
+        Unjoins the triangulation with another facet in the same polytope.
+        """
+        raise NotImplementedError()
+
+    def exterior_join(self, pol, iso):
+        """
+        Joins the external boundary with another facet on another polytope, via a given isometry.
+        """
+        raise NotImplementedError()
+
 
 class Tesselleted_manifold:
     def __init__(self, polytope, indices, pasting_map, state=None):
@@ -75,14 +139,12 @@ class Tesselleted_manifold:
         """
         self.polytope_class = polytope
         self.polytopes = {}
-        self.tri = regina.__getattribute__("Triangulation"+str(polytope.dimension))()
 
         for i in indices:
-            self.polytopes[i] = polytope(self.tri)
+            self.polytopes[i] = polytope()
             self.polytopes[i].index = i
             self.polytopes[i].manifold = self
 
-        pasted_facets = {}
         # Metto gli stati
         if state is not None:
             for p in self.polytopes.values():
@@ -92,14 +154,28 @@ class Tesselleted_manifold:
         # Incollo le faccette
         for p in self.polytopes.values():
             for f in p.facets.values():
-                if f not in pasted_facets and pasting_map(f) is not None:
+                if pasting_map(f) is not None:
                     target_p, iso = pasting_map(f)
                     target_f = iso(f, target_p)
                     # Controlla che la mappa di incollamento sia simmetrica
                     assert pasting_map(target_f) == (p, iso.inverse())
                     assert target_f.state is None or target_f.state == (not f.state)
                     # Incollamento
-                    f.paste(target_p, iso)
+                    f.adjacent_pol = target_p
+                    f.joining_iso = iso
+
+        self.tri = self.triangulate()
+
+    def triangulate(self):
+        tri = regina.__getattribute__("Triangulation"+str(self.polytope_class.dimension))()
+        for p in self.polytopes.values():
+            p.triangulate(tri)
+        for p in self.polytopes.values():
+            for f in p.facets.values():
+                if f.adjacent_pol is not None:
+                    f.exterior_join(f.adjacent_pol, f.joining_iso)
+
+        return tri
 
     def get_quotient(self, isometry_group):
         """
@@ -122,17 +198,17 @@ class Tesselleted_manifold:
         def facet_mapping(f):
             p = f.pol
             m = p.manifold
-            upper_adj_pol = self.polytopes[p.index].facets[f.coords].adjacent_pol
+            upper_adj_pol = self.polytopes[p.index].facets[f.index].adjacent_pol
             if upper_adj_pol is not None:
-                return (m.polytopes[upper_adj_pol.identification(upper_adj_pol).index], upper_adj_pol.identification.isos.get(upper_adj_pol.index) * self.polytopes[p.index].facets[f.coords].joining_iso)
+                return (m.polytopes[upper_adj_pol.identification(upper_adj_pol).index], upper_adj_pol.identification.isos.get(upper_adj_pol.index) * self.polytopes[p.index].facets[f.index].joining_iso)
             else:
                 return None
 
         def facet_state(f):
-            return self.polytopes[f.pol.index].facets[f.coords].state
+            return self.polytopes[f.pol.index].facets[f.index].state
 
         return Tesselleted_manifold(self.polytope_class, representatives, facet_mapping, facet_state)
-        
+
 class Tesselleted_manifold_isometry:
     def __init__(self, manifold, start_pol=None, end_pol=None, iso=None, images=None, isos=None):
         """
