@@ -129,10 +129,10 @@ class AbstractFacet:
         raise NotImplementedError()
 
 
-class Tesselleted_manifold:
+class Tessellated_manifold:
     def __init__(self, polytope, indices, pasting_map, state=None):
         """
-        Builds a manifold tesselleted with copies of polytope, which are indexed by indices.
+        Builds a manifold tessellated with copies of polytope, which are indexed by indices.
         pasting_map takes a facet as input and must return a 2-uple (glued polytope, isomorphism),
         and None if it is a boundary facet.
         state, if provided, takes a facet as input and return True if it is pointing outwards, False if inwards.
@@ -165,6 +165,15 @@ class Tesselleted_manifold:
                     f.joining_iso = iso
 
         self.tri = self.triangulate()
+
+    def __repr__(self):
+        ret = ""
+        for p in self.polytopes.values():
+            ret += "Polytope " + str(p.index) + "\n{:<24}{:<8}{:<12}{:<24}{:<12}\n".format("Facet", "Status", "To Polytope", "To Facet", "Permutation")
+            for f in p.facets.values():
+                ret += "{:<24}{:<8}{:<12}{:<24}{:<12}\n".format(str(f.index), "Out" if f.state else "In", str(f.adjacent_pol.index), str(f.joining_iso(f).index), str(f.joining_iso.perm))
+        return ret
+
 
     def triangulate(self):
         tri = regina.__getattribute__("Triangulation"+str(self.polytope_class.dimension))()
@@ -226,9 +235,9 @@ class Tesselleted_manifold:
         def facet_state(f):
             return self.polytopes[f.pol.index].facets[f.index].state
 
-        return Tesselleted_manifold(self.polytope_class, representatives, facet_mapping, facet_state)
+        return Tessellated_manifold(self.polytope_class, representatives, facet_mapping, facet_state)
 
-class Tesselleted_manifold_isometry:
+class Tessellated_manifold_isometry:
     def __init__(self, manifold, start_pol=None, end_pol=None, iso=None, images=None, isos=None):
         """
         Defines an isometry of a manifold that sends a polytope in another with a given isomorphism.
@@ -265,7 +274,7 @@ class Tesselleted_manifold_isometry:
             compute_adjacent_maps(i)
 
     def inverse(self):
-        return Tesselleted_manifold_isometry(self.manifold, images={v.index: self.manifold.polytopes[k] for k, v in self.images.items()}, isos={self.images[k].index: v.inverse() for k, v in self.isos.items()})
+        return Tessellated_manifold_isometry(self.manifold, images={v.index: self.manifold.polytopes[k] for k, v in self.images.items()}, isos={self.images[k].index: v.inverse() for k, v in self.isos.items()})
 
     def __eq__(self, other):
         for k in self.images:
@@ -286,12 +295,12 @@ class Tesselleted_manifold_isometry:
 
 
     def __mul__(self, other):
-        return Tesselleted_manifold_isometry(self.manifold, images={k: self.images.get(v.index) for k, v in other.images.items()}, isos={k: self.isos.get(v.index)*other.isos.get(k) for k, v in other.images.items() if v.index in self.isos})
+        return Tessellated_manifold_isometry(self.manifold, images={k: self.images.get(v.index) for k, v in other.images.items()}, isos={k: self.isos.get(v.index)*other.isos.get(k) for k, v in other.images.items() if v.index in self.isos})
 
     def __bool__(self):
         return bool(self.images)
 
-class Tesselleted_manifold_isometry_group:
+class Tessellated_manifold_isometry_group:
     def __init__(self, *generators, iterations=-1):
         """
         Computes the isometry group given some generators.

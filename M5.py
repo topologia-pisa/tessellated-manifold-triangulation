@@ -1,5 +1,5 @@
 import itertools, regina
-from tessellation import Tesselleted_manifold, Tesselleted_manifold_isometry, Tesselleted_manifold_isometry_group
+from tessellation import Tessellated_manifold, Tessellated_manifold_isometry, Tessellated_manifold_isometry_group
 from regina import Perm4
 from P5 import P5, P5_iso, I, J, K, rt
 from sage.all import QuaternionAlgebra, Matrix
@@ -15,7 +15,7 @@ def get_S5():
         id = P5_iso()
         return (manifold.polytopes[1-p.index], id)
 
-    return Tesselleted_manifold(P5, [0,1], pasting_map_sphere)
+    return Tessellated_manifold(P5, [0,1], pasting_map_sphere)
 
 def get_M5():
     """
@@ -29,7 +29,7 @@ def get_M5():
         x[facet.color] = 1 - x[facet.color]
         return (manifold.polytopes[tuple(x)], id)
 
-    return Tesselleted_manifold(P5, [x for x in itertools.product(*[[0,1]]*8)], pasting_map_M5)
+    return Tessellated_manifold(P5, [x for x in itertools.product(*[[0,1]]*8)], pasting_map_M5)
 
 # Action of Q_8 on P5
 q8_iso = {1: P5_iso(), -1: P5_iso([-1, -1, -1, -1]), I: P5_iso([1, -1, 1, -1], Perm4(3, 2, 1, 0)), J: P5_iso([1, -1, -1, 1], Perm4(1, 0, 3, 2))}
@@ -70,9 +70,9 @@ def get_minimal_quotient():
             new_p = manifold.polytopes[(level + (1 if facet.state else -1), rotation * (-I if facet.index[4] == 1 else I))]
             return (new_p, iso)
 
-    mnf = Tesselleted_manifold(P5, [(-1, I), (-1, -I), (0, 1), (0, -1), (1, I), (1, -I), (2, 1), (2, -1)], pasting_map_minimal_quotient, facet_state)
-    isom = Tesselleted_manifold_isometry(mnf, mnf.polytopes[(0,1)], mnf.polytopes[(1, I)], quotienting_iso)
-    return mnf.get_quotient(Tesselleted_manifold_isometry_group(isom))
+    mnf = Tessellated_manifold(P5, [(-1, I), (-1, -I), (0, 1), (0, -1), (1, I), (1, -I), (2, 1), (2, -1)], pasting_map_minimal_quotient, facet_state)
+    isom = Tessellated_manifold_isometry(mnf, mnf.polytopes[(0,1)], mnf.polytopes[(1, I)], quotienting_iso)
+    return mnf.get_quotient(Tessellated_manifold_isometry_group(isom))
 
 
 def get_M5_cyclic_covering():
@@ -104,7 +104,7 @@ def get_M5_cyclic_covering():
         x[facet.color] = 1 - x[facet.color]
         return (manifold.polytopes[tuple(x) + (new_level, )], id)
 
-    return Tesselleted_manifold(P5, [x for x in itertools.product(*[[0,1]]*8 + [[1, 0, 2]]) if sum(x) % 2 == 0], pasting_map_leveled_M5, facet_state)
+    return Tessellated_manifold(P5, [x for x in itertools.product(*[[0,1]]*8 + [[1, 0, 2]]) if sum(x) % 2 == 0], pasting_map_leveled_M5, facet_state)
 
 def get_M5_two_quotient():
     """
@@ -114,7 +114,7 @@ def get_M5_two_quotient():
     """
     leveled_M5 = get_M5_cyclic_covering()
     isometries = [
-        Tesselleted_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[x], y) for x, y in [
+        Tessellated_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[x], y) for x, y in [
             ((1,1,0,0,1,1,0,0,0), P5_iso()),
             ((1,0,1,0,1,0,1,0,0), P5_iso()),
             ((1,0,0,1,1,0,0,1,0), P5_iso()),
@@ -123,7 +123,7 @@ def get_M5_two_quotient():
             ((1,0,0,0,0,0,0,0,1), quotienting_iso)
         ]
     ]
-    G = Tesselleted_manifold_isometry_group(*isometries, iterations=3)
+    G = Tessellated_manifold_isometry_group(*isometries, iterations=3)
     return leveled_M5.get_quotient(G)
 
 
@@ -149,4 +149,4 @@ def get_rt_minimal_manifold():
             raise Exception("Cannot paste {} to {}".format(number, target_number))
         return (p.manifold.polytopes[1 if target_number >= 16 else 0], iso)
 
-    return Tesselleted_manifold(P5, [0,1], pasting_map_rt)
+    return Tessellated_manifold(P5, [0,1], pasting_map_rt)
