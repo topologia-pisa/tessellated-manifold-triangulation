@@ -220,6 +220,7 @@ class Tessellated_manifold:
                 for phi in isometry_group:
                     if phi(p) is not None:
                         phi(p).identification = phi.inverse()
+                        assert all(not hasattr(f, "state") or f.state == phi(f).state for f in p.facets.values())
                 representatives.append(p.index)
                 assert p.identification is not None
 
@@ -235,7 +236,9 @@ class Tessellated_manifold:
         def facet_state(f):
             return self.polytopes[f.pol.index].facets[f.index].state
 
-        return Tessellated_manifold(self.polytope_class, representatives, facet_mapping, facet_state)
+        ret = Tessellated_manifold(self.polytope_class, representatives, facet_mapping, facet_state)
+        ret.covering = self
+        return ret
 
 class Tessellated_manifold_isometry:
     def __init__(self, manifold, start_pol=None, end_pol=None, iso=None, images=None, isos=None):

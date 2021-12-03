@@ -21,6 +21,20 @@ def get_M5():
     """
     Returns the manifold obtained with 2^8 copies of P5, induced by the coloring of P5 with 8 colors.
     """
+    def facet_state(facet):
+        state = True
+        if facet.label in {-1, -I, -J, -K}:
+            label = -facet.label
+            state = not state
+        else:
+            label = facet.label
+
+        i = [1, I, J, K].index(label)
+        if (facet.pol.index[i] + facet.pol.index[i+4]) % 2 == 0:
+            return state
+        else:
+            return not state
+
     def pasting_map_M5(facet):
         p = facet.pol
         manifold = p.manifold
@@ -29,7 +43,7 @@ def get_M5():
         x[facet.color] = 1 - x[facet.color]
         return (manifold.polytopes[tuple(x)], id)
 
-    return Tessellated_manifold(P5, [x for x in itertools.product(*[[0,1]]*8)], pasting_map_M5)
+    return Tessellated_manifold(P5, [x for x in itertools.product(*[[0,1]]*8)], pasting_map_M5, facet_state)
 
 # Action of Q_8 on P5
 q8_iso = {1: P5_iso(), -1: P5_iso([-1, -1, -1, -1]), I: P5_iso([1, -1, 1, -1], Perm4(3, 2, 1, 0)), J: P5_iso([1, -1, -1, 1], Perm4(1, 0, 3, 2))}
@@ -125,6 +139,28 @@ def get_M5_two_quotient():
     ]
     G = Tessellated_manifold_isometry_group(*isometries, iterations=3)
     return leveled_M5.get_quotient(G)
+
+def get_M5_other_two_quotient():
+    """
+    Returns another quotient of the cyclic covering of M5 by the action of Q8 and the
+    additional isometry which inverts the two small cusps.
+    We take a different index two subgroup.
+    The result is NOT isomorphic to the manifold constructed by Ratcliffe and Tschantz.
+    """
+    leveled_M5 = get_M5_cyclic_covering()
+    isometries = [
+        Tessellated_manifold_isometry(leveled_M5, leveled_M5.polytopes[(0,)*9], leveled_M5.polytopes[x], y) for x, y in [
+            ((1,1,0,0,1,1,0,0,0), P5_iso()),
+            ((1,0,1,0,1,0,1,0,0), P5_iso()),
+            ((1,0,0,1,1,0,0,1,0), P5_iso()),
+            ((1,0,1,0,0,0,0,0,0), q8_iso[I]),
+            ((1,0,0,0,0,1,0,0,0), q8_iso[K]),
+            ((1,0,0,0,0,0,0,0,1), quotienting_iso)
+        ]
+    ]
+    G = Tessellated_manifold_isometry_group(*isometries, iterations=3)
+    return leveled_M5.get_quotient(G)
+
 
 
 def get_rt_minimal_manifold():
