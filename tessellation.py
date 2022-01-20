@@ -240,6 +240,25 @@ class Tessellated_manifold:
         ret.covering = self
         return ret
 
+    def get_finite_cover(self, n):
+        """
+        Returns the finite cover with respect to the given states.
+        """
+        def facet_mapping(f):
+            p = f.pol
+            m = p.manifold
+            index, level = p.index
+            covered_facet = self.polytopes[p.index[0]].facets[f.index]
+            if covered_facet.adjacent_pol is None:
+                return None
+            else:
+                return (m.polytopes[(covered_facet.adjacent_pol.index, (level + (1 if covered_facet.state else -1)) % n)], covered_facet.joining_iso)
+
+        def facet_state(f):
+            return self.polytopes[f.pol.index[0]].facets[f.index].state
+
+        return Tessellated_manifold(self.polytope_class, [(p, k) for p in self.polytopes for k in range(n)], facet_mapping, facet_state)
+
 class Tessellated_manifold_isometry:
     def __init__(self, manifold, start_pol=None, end_pol=None, iso=None, images=None, isos=None):
         """
