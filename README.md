@@ -11,6 +11,7 @@ $ pip install regina
 ```
 
 Clone this repo in your favourite dierectory:
+
 ```
 $ cd <your-favourite-directory>
 $ git clone https://github.com/topologia-pisa/tessellated-manifold-triangulation
@@ -20,11 +21,22 @@ $ cd tessellated-manifold-triangulation
 ### Testing
 
 You can run `M5.py` in interactive mode to inspect the manifolds with
+
 ```
 $ python3 -i M5.py
 ```
 
-From here you have at your disposal some functions which build a manifold, for example 
+The above command might not work if you're not running the python binary which is bundled with Sage.
+If it doesn't work, you may also try to run Sage directly with
+
+```
+$ sage -python -i M5.py
+```
+
+(thanks to Colby Kelln for pointing that out).
+
+From here you have at your disposal some functions which build a manifold, for example
+
 ```
 >>> M=get_minimal_quotient()
 Computing isometry group... Press Ctrl-C to terminate early.
@@ -36,6 +48,7 @@ Found 0 new elements, total 8. Done.
 ```
 
 You can get a description of what the manifold is supposed to be with
+
 ```
 >>> help(get_minimal_quotient)
 
@@ -47,53 +60,56 @@ get_minimal_quotient()
 ```
 
 You can also print a combinatorial description of how the facets are pasted to each other:
+
 ```
 >>> M
 Polytope (0, 1)
-Facet                   Status  To Polytope To Facet                Permutation 
-(-1, -1, -1, -1, 1)     In      (0, -1)     (-1, 1, 1, 1, -1)       02134       
-(-1, -1, -1, 1, -1)     In      (0, 1)      (1, 1, -1, -1, 1)       31204       
-(-1, -1, 1, -1, -1)     In      (0, 1)      (1, -1, 1, -1, 1)       13024       
-(-1, -1, 1, 1, 1)       In      (0, -1)     (1, 1, 1, -1, -1)       31204       
-(-1, 1, -1, -1, -1)     In      (0, 1)      (1, -1, -1, 1, 1)       20314       
-(-1, 1, -1, 1, 1)       In      (0, -1)     (1, 1, -1, 1, -1)       20314       
-(-1, 1, 1, -1, 1)       In      (0, -1)     (1, -1, 1, 1, -1)       13024       
-(-1, 1, 1, 1, -1)       Out     (0, -1)     (-1, -1, -1, -1, 1)     02134       
-(1, -1, -1, -1, -1)     In      (0, 1)      (1, 1, 1, 1, 1)         02134       
-(1, -1, -1, 1, 1)       Out     (0, 1)      (-1, 1, -1, -1, -1)     13024       
-(1, -1, 1, -1, 1)       Out     (0, 1)      (-1, -1, 1, -1, -1)     20314       
-(1, -1, 1, 1, -1)       Out     (0, -1)     (-1, 1, 1, -1, 1)       20314       
-(1, 1, -1, -1, 1)       Out     (0, 1)      (-1, -1, -1, 1, -1)     31204       
-(1, 1, -1, 1, -1)       Out     (0, -1)     (-1, 1, -1, 1, 1)       13024       
-(1, 1, 1, -1, -1)       Out     (0, -1)     (-1, -1, 1, 1, 1)       31204       
-(1, 1, 1, 1, 1)         Out     (0, 1)      (1, -1, -1, -1, -1)     02134       
+Facet                   Status  To Polytope To Facet                Permutation
+(-1, -1, -1, -1, 1)     In      (0, -1)     (-1, 1, 1, 1, -1)       02134
+(-1, -1, -1, 1, -1)     In      (0, 1)      (1, 1, -1, -1, 1)       31204
+(-1, -1, 1, -1, -1)     In      (0, 1)      (1, -1, 1, -1, 1)       13024
+(-1, -1, 1, 1, 1)       In      (0, -1)     (1, 1, 1, -1, -1)       31204
+(-1, 1, -1, -1, -1)     In      (0, 1)      (1, -1, -1, 1, 1)       20314
+(-1, 1, -1, 1, 1)       In      (0, -1)     (1, 1, -1, 1, -1)       20314
+(-1, 1, 1, -1, 1)       In      (0, -1)     (1, -1, 1, 1, -1)       13024
+(-1, 1, 1, 1, -1)       Out     (0, -1)     (-1, -1, -1, -1, 1)     02134
+(1, -1, -1, -1, -1)     In      (0, 1)      (1, 1, 1, 1, 1)         02134
+(1, -1, -1, 1, 1)       Out     (0, 1)      (-1, 1, -1, -1, -1)     13024
+(1, -1, 1, -1, 1)       Out     (0, 1)      (-1, -1, 1, -1, -1)     20314
+(1, -1, 1, 1, -1)       Out     (0, -1)     (-1, 1, 1, -1, 1)       20314
+(1, 1, -1, -1, 1)       Out     (0, 1)      (-1, -1, -1, 1, -1)     31204
+(1, 1, -1, 1, -1)       Out     (0, -1)     (-1, 1, -1, 1, 1)       13024
+(1, 1, 1, -1, -1)       Out     (0, -1)     (-1, -1, 1, 1, 1)       31204
+(1, 1, 1, 1, 1)         Out     (0, 1)      (1, -1, -1, -1, -1)     02134
 Polytope (0, -1)
-Facet                   Status  To Polytope To Facet                Permutation 
-(-1, -1, -1, -1, 1)     In      (0, 1)      (-1, 1, 1, 1, -1)       02134       
-(-1, -1, -1, 1, -1)     In      (0, -1)     (1, 1, -1, -1, 1)       31204       
-(-1, -1, 1, -1, -1)     In      (0, -1)     (1, -1, 1, -1, 1)       13024       
-(-1, -1, 1, 1, 1)       In      (0, 1)      (1, 1, 1, -1, -1)       31204       
-(-1, 1, -1, -1, -1)     In      (0, -1)     (1, -1, -1, 1, 1)       20314       
-(-1, 1, -1, 1, 1)       In      (0, 1)      (1, 1, -1, 1, -1)       20314       
-(-1, 1, 1, -1, 1)       In      (0, 1)      (1, -1, 1, 1, -1)       13024       
-(-1, 1, 1, 1, -1)       Out     (0, 1)      (-1, -1, -1, -1, 1)     02134       
-(1, -1, -1, -1, -1)     In      (0, -1)     (1, 1, 1, 1, 1)         02134       
-(1, -1, -1, 1, 1)       Out     (0, -1)     (-1, 1, -1, -1, -1)     13024       
-(1, -1, 1, -1, 1)       Out     (0, -1)     (-1, -1, 1, -1, -1)     20314       
-(1, -1, 1, 1, -1)       Out     (0, 1)      (-1, 1, 1, -1, 1)       20314       
-(1, 1, -1, -1, 1)       Out     (0, -1)     (-1, -1, -1, 1, -1)     31204       
-(1, 1, -1, 1, -1)       Out     (0, 1)      (-1, 1, -1, 1, 1)       13024       
-(1, 1, 1, -1, -1)       Out     (0, 1)      (-1, -1, 1, 1, 1)       31204       
-(1, 1, 1, 1, 1)         Out     (0, -1)     (1, -1, -1, -1, -1)     02134       
+Facet                   Status  To Polytope To Facet                Permutation
+(-1, -1, -1, -1, 1)     In      (0, 1)      (-1, 1, 1, 1, -1)       02134
+(-1, -1, -1, 1, -1)     In      (0, -1)     (1, 1, -1, -1, 1)       31204
+(-1, -1, 1, -1, -1)     In      (0, -1)     (1, -1, 1, -1, 1)       13024
+(-1, -1, 1, 1, 1)       In      (0, 1)      (1, 1, 1, -1, -1)       31204
+(-1, 1, -1, -1, -1)     In      (0, -1)     (1, -1, -1, 1, 1)       20314
+(-1, 1, -1, 1, 1)       In      (0, 1)      (1, 1, -1, 1, -1)       20314
+(-1, 1, 1, -1, 1)       In      (0, 1)      (1, -1, 1, 1, -1)       13024
+(-1, 1, 1, 1, -1)       Out     (0, 1)      (-1, -1, -1, -1, 1)     02134
+(1, -1, -1, -1, -1)     In      (0, -1)     (1, 1, 1, 1, 1)         02134
+(1, -1, -1, 1, 1)       Out     (0, -1)     (-1, 1, -1, -1, -1)     13024
+(1, -1, 1, -1, 1)       Out     (0, -1)     (-1, -1, 1, -1, -1)     20314
+(1, -1, 1, 1, -1)       Out     (0, 1)      (-1, 1, 1, -1, 1)       20314
+(1, 1, -1, -1, 1)       Out     (0, -1)     (-1, -1, -1, 1, -1)     31204
+(1, 1, -1, 1, -1)       Out     (0, 1)      (-1, 1, -1, 1, 1)       13024
+(1, 1, 1, -1, -1)       Out     (0, 1)      (-1, -1, 1, 1, 1)       31204
+(1, 1, 1, 1, 1)         Out     (0, -1)     (1, -1, -1, -1, -1)     02134
 ```
 
 Also, you can access the Regina triangulation of the manifold via the `tri` attribute of `M`:
+
 ```
 >>> M.tri
 <regina.Triangulation5: Possibly closed orientable 5-D triangulation, f = ( 5 67 320 640 576 192 )>
 ```
 
 As an example, we check that the manifold built by Ratcliffe and Tschantz is isomorphic to M, by making use of Regina's [isIsomorphic](https://regina-normal.github.io/engine-docs/classregina_1_1detail_1_1TriangulationBase.html#ac568895b8abeb672289fcee779ebf01a) function:
+
 ```
 >>> help(get_rt_minimal_manifold)
 
