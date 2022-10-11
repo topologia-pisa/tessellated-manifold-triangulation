@@ -1,13 +1,18 @@
 import regina, itertools, signal
 from regina import Triangulation5
 from regina.engine import Face5_0, Simplex5
-from sage.all import Graph
+from sage.all import SimplicialComplex
+
 
 def get_link(vertex):
+    """
+    Gets the link of a vertex by hand, since Regina
+    did not support it in high dimension.
+    """
     d = vertex.triangulation().dimension
     embeddings = vertex.embeddings()
     link_simplices = {}
-    link = regina.__getattribute__("Triangulation"+str(d - 1))()
+    link = regina.__getattribute__("Triangulation" + str(d - 1))()
     for e in embeddings:
         assert (e.simplex().index(), e.vertex()) not in link_simplices.keys()
         link_simplices[(e.simplex().index(), e.vertex())] = link.newSimplex()
@@ -17,17 +22,30 @@ def get_link(vertex):
         for i in range(d + 1):
             adj_s = s.adjacentSimplex(i)
             if i != e.vertex() and adj_s is not None:
-                # Creo la permutazione ristretta
+                # Create restricted permutation
                 old_simplex_vertices = [x for x in range(d + 1) if x != e.vertex()]
-                new_simplex_vertices = [x for x in range(d + 1) if x != s.adjacentGluing(i)[e.vertex()]]
-                p = [new_simplex_vertices.index(s.adjacentGluing(i)[old_simplex_vertices[j]]) for j in range(d)]
-                assert(sorted(p) == list(range(d)))
-                Permutation = regina.__getattribute__("Perm"+str(d))
-                link_simplices[(s.index(), e.vertex())].join(old_simplex_vertices.index(i), link_simplices[(adj_s.index(), s.adjacentGluing(i)[e.vertex()])], Permutation(*p) if d <= 5 else Permutation(p))
+                new_simplex_vertices = [
+                    x for x in range(d + 1) if x != s.adjacentGluing(i)[e.vertex()]
+                ]
+                p = [
+                    new_simplex_vertices.index(
+                        s.adjacentGluing(i)[old_simplex_vertices[j]]
+                    )
+                    for j in range(d)
+                ]
+                assert sorted(p) == list(range(d))
+                Permutation = regina.__getattribute__("Perm" + str(d))
+                link_simplices[(s.index(), e.vertex())].join(
+                    old_simplex_vertices.index(i),
+                    link_simplices[(adj_s.index(), s.adjacentGluing(i)[e.vertex()])],
+                    Permutation(*p) if d <= 5 else Permutation(p),
+                )
 
     return link
 
+
 Face5_0.get_link = get_link
+
 
 def identify_with(simplex1, simplex2, perm):
     """Removes simplex1 and glue adjacent simplices to simplex2"""
@@ -37,49 +55,64 @@ def identify_with(simplex1, simplex2, perm):
         return
     else:
         # Do not allow identification of glued simplices
-        assert simplex2 not in [simplex1.adjacentSimplex(i) for i in range(d+1)]
+        assert simplex2 not in [simplex1.adjacentSimplex(i) for i in range(d + 1)]
 
-    gluings = [(simplex1.adjacentSimplex(i), simplex1.adjacentGluing(i)) for i in range(d+1)]
+    gluings = [
+        (simplex1.adjacentSimplex(i), simplex1.adjacentGluing(i)) for i in range(d + 1)
+    ]
     simplex1.isolate()
-    for i in range(d+1):
+    for i in range(d + 1):
         adj_s, adj_g = gluings[i]
         if simplex2.adjacentSimplex(perm[i]) is None and adj_s is not None:
             simplex2.join(perm[i], adj_s, adj_g * perm.inverse())
     simplex1.triangulation().removeSimplex(simplex1)
 
+
 Simplex5.identify_with = identify_with
+
 
 def simplicial_complex_from_triangulation(triangulation):
     simpl_cplx = []
     d = triangulation.dimension
     for s in triangulation.simplices():
-        for indices in itertools.product(*[list(range(n)) for n in range(2,d+2)]):
-            # indices cicla tra le d-uple in cui l'i-esimo elemento è compreso tra 0 e i
-            simpl = [(d,s.index())]
+        for indices in itertools.product(*[list(range(n)) for n in range(2, d + 2)]):
+            # indices ranges among d-uples in which the i-th element is between 0 and i.
+            simpl = [(d, s.index())]
             f = s
-            for i,j in enumerate(reversed(indices)):
-                f = f.face(d-i-1, j)
-                simpl.append((d-i-1, f.index()))
+            for i, j in enumerate(reversed(indices)):
+                f = f.face(d - i - 1, j)
+                simpl.append((d - i - 1, f.index()))
                 simpl_cplx.append(simpl)
                 return SimplicialComplex(simpl_cplx)
 
+
 Triangulation5.get_simplicial_complex = simplicial_complex_from_triangulation
+
 
 class AbstractPolytopeIsometry:
     def inverse(self):
-        raise NotImplementedError("Please implement inverse function in the appropriate subclass.")
+        raise NotImplementedError(
+            "Please implement inverse function in the appropriate subclass."
+        )
 
     def __eq__(self, other):
-        raise NotImplementedError("Please implement __eq__ function in the appropriate subclass.")
+        raise NotImplementedError(
+            "Please implement __eq__ function in the appropriate subclass."
+        )
 
     def __mul__(self, other):
-        raise NotImplementedError("Please implement __mul__ function in the appropriate subclass.")
+        raise NotImplementedError(
+            "Please implement __mul__ function in the appropriate subclass."
+        )
 
     def __call__(self, arg, other_pol):
         """
         Should return the image of a facet in the polytope other_pol (if omitted, self should be used).
         """
-        raise NotImplementedError("Please implement __call__ function in the appropriate subclass.")
+        raise NotImplementedError(
+            "Please implement __call__ function in the appropriate subclass."
+        )
+
 
 class AbstractPolytope:
     dimension = None
@@ -87,7 +120,9 @@ class AbstractPolytope:
     facet_graph = None
 
     def __init__(self):
-        self.facets = {i: self.facet_class(i, self) for i in self.facet_graph.vertices()}
+        self.facets = {
+            i: self.facet_class(i, self) for i in self.facet_graph.vertices()
+        }
 
     def triangulate(self, tri):
         for f in self.facets.values():
@@ -95,6 +130,7 @@ class AbstractPolytope:
 
         for f1, f2, _ in self.facet_graph.edges():
             self.facets[f1].interior_join(self.facets[f2])
+
 
 class AbstractFacet:
     def __init__(self, index, pol):
@@ -145,13 +181,13 @@ class Tessellated_manifold:
             self.polytopes[i].index = i
             self.polytopes[i].manifold = self
 
-        # Metto gli stati
+        # Set states
         if state is not None:
             for p in self.polytopes.values():
                 for f in p.facets.values():
                     f.state = state(f)
 
-        # Incollo le faccette
+        # Paste facets
         for p in self.polytopes.values():
             for f in p.facets.values():
                 if pasting_map(f) is not None:
@@ -167,16 +203,38 @@ class Tessellated_manifold:
         self.tri = self.triangulate()
 
     def __repr__(self):
+        """
+        Pretty prints a table with all information on
+        gluing isomophisms and states.
+        """
         ret = ""
         for p in self.polytopes.values():
-            ret += "Polytope " + str(p.index) + "\n{:<24}{:<8}{:<12}{:<24}{:<12}\n".format("Facet", "Status", "To Polytope", "To Facet", "Permutation")
+            ret += (
+                "Polytope "
+                + str(p.index)
+                + "\n{:<24}{:<8}{:<12}{:<24}{:<12}\n".format(
+                    "Facet", "Status", "To Polytope", "To Facet", "Permutation"
+                )
+            )
             for f in p.facets.values():
-                ret += "{:<24}{:<8}{:<12}{:<24}{:<12}\n".format(str(f.index), "Out" if f.state else "In", str(f.adjacent_pol.index), str(f.joining_iso(f).index), str(f.joining_iso.perm))
+                ret += "{:<24}{:<8}{:<12}{:<24}{:<12}\n".format(
+                    str(f.index),
+                    "Out" if f.state else "In",
+                    str(f.adjacent_pol.index),
+                    str(f.joining_iso(f).index),
+                    str(f.joining_iso.perm),
+                )
         return ret
 
-
     def triangulate(self):
-        tri = regina.__getattribute__("Triangulation"+str(self.polytope_class.dimension))()
+        """
+        Returns a triangulation for the manifold, obtained by
+        triangulation the single polytopes and then gluing together
+        pasted factes.
+        """
+        tri = regina.__getattribute__(
+            "Triangulation" + str(self.polytope_class.dimension)
+        )()
         for p in self.polytopes.values():
             p.triangulate(tri)
         for p in self.polytopes.values():
@@ -187,6 +245,10 @@ class Tessellated_manifold:
         return tri
 
     def get_triangulation_cut_along_fiber(self):
+        """
+        Cuts the triangulation between facets with opposite
+        states.
+        """
         for p in self.polytopes.values():
             for f1, f2, _ in p.facet_graph.edges():
                 if p.facets[f1].state == (not p.facets[f2].state):
@@ -200,6 +262,10 @@ class Tessellated_manifold:
         return product
 
     def get_fiber(self):
+        """
+        Returns a triangulation of the fiber as a boundary
+        component of the cut triangulation above.
+        """
         t = self.get_triangulation_cut_along_fiber()
         fibers = [b.build() for b in t.boundaryComponents()]
         assert all(f.isIsomorphicTo(fibers[0]) for f in fibers)
@@ -216,11 +282,16 @@ class Tessellated_manifold:
             p.identification = None
 
         for p in self.polytopes.values():
-            if p.identification is None and all(f.adjacent_pol is not None for f in p.facets.values()):
+            if p.identification is None and all(
+                f.adjacent_pol is not None for f in p.facets.values()
+            ):
                 for phi in isometry_group:
                     if phi(p) is not None:
                         phi(p).identification = phi.inverse()
-                        assert all(not hasattr(f, "state") or f.state == phi(f).state for f in p.facets.values())
+                        assert all(
+                            not hasattr(f, "state") or f.state == phi(f).state
+                            for f in p.facets.values()
+                        )
                 representatives.append(p.index)
                 assert p.identification is not None
 
@@ -229,14 +300,20 @@ class Tessellated_manifold:
             m = p.manifold
             upper_adj_pol = self.polytopes[p.index].facets[f.index].adjacent_pol
             if upper_adj_pol is not None:
-                return (m.polytopes[upper_adj_pol.identification(upper_adj_pol).index], upper_adj_pol.identification.isos.get(upper_adj_pol.index) * self.polytopes[p.index].facets[f.index].joining_iso)
+                return (
+                    m.polytopes[upper_adj_pol.identification(upper_adj_pol).index],
+                    upper_adj_pol.identification.isos.get(upper_adj_pol.index)
+                    * self.polytopes[p.index].facets[f.index].joining_iso,
+                )
             else:
                 return None
 
         def facet_state(f):
             return self.polytopes[f.pol.index].facets[f.index].state
 
-        ret = Tessellated_manifold(self.polytope_class, representatives, facet_mapping, facet_state)
+        ret = Tessellated_manifold(
+            self.polytope_class, representatives, facet_mapping, facet_state
+        )
         ret.covering = self
         return ret
 
@@ -244,6 +321,7 @@ class Tessellated_manifold:
         """
         Returns the finite cover with respect to the given states.
         """
+
         def facet_mapping(f):
             p = f.pol
             m = p.manifold
@@ -252,15 +330,31 @@ class Tessellated_manifold:
             if covered_facet.adjacent_pol is None:
                 return None
             else:
-                return (m.polytopes[(covered_facet.adjacent_pol.index, (level + (1 if covered_facet.state else -1)) % n)], covered_facet.joining_iso)
+                return (
+                    m.polytopes[
+                        (
+                            covered_facet.adjacent_pol.index,
+                            (level + (1 if covered_facet.state else -1)) % n,
+                        )
+                    ],
+                    covered_facet.joining_iso,
+                )
 
         def facet_state(f):
             return self.polytopes[f.pol.index[0]].facets[f.index].state
 
-        return Tessellated_manifold(self.polytope_class, [(p, k) for p in self.polytopes for k in range(n)], facet_mapping, facet_state)
+        return Tessellated_manifold(
+            self.polytope_class,
+            [(p, k) for p in self.polytopes for k in range(n)],
+            facet_mapping,
+            facet_state,
+        )
+
 
 class Tessellated_manifold_isometry:
-    def __init__(self, manifold, start_pol=None, end_pol=None, iso=None, images=None, isos=None):
+    def __init__(
+        self, manifold, start_pol=None, end_pol=None, iso=None, images=None, isos=None
+    ):
         """
         Defines an isometry of a manifold that sends a polytope in another with a given isomorphism.
         If more are provided, fewer computations are needed.
@@ -272,22 +366,34 @@ class Tessellated_manifold_isometry:
             self.images = {start_pol.index: end_pol}
             self.isos = {start_pol.index: iso}
         else:
-            self.images = {k:v for k, v in images.items() if v is not None}
-            self.isos = {k:v for k, v in isos.items() if v is not None}
+            self.images = {k: v for k, v in images.items() if v is not None}
+            self.isos = {k: v for k, v in isos.items() if v is not None}
             assert self.images.keys() == self.isos.keys()
 
-        #assert self.images
+        # assert self.images
         self.unmapped = []
         self.polytope_class = manifold.polytope_class
 
         def compute_adjacent_maps(i):
             p = manifold.polytopes[i]
             for f in p.facets.values():
-                if f.adjacent_pol is not None and f.adjacent_pol.index not in self.unmapped and f.adjacent_pol.index not in self.images:
+                if (
+                    f.adjacent_pol is not None
+                    and f.adjacent_pol.index not in self.unmapped
+                    and f.adjacent_pol.index not in self.images
+                ):
                     target_f = self(f)
                     if target_f.adjacent_pol is not None:
-                        self.images.update({f.adjacent_pol.index:  target_f.adjacent_pol})
-                        self.isos.update({f.adjacent_pol.index:  target_f.joining_iso*self.isos[i]*f.joining_iso.inverse()})
+                        self.images.update(
+                            {f.adjacent_pol.index: target_f.adjacent_pol}
+                        )
+                        self.isos.update(
+                            {
+                                f.adjacent_pol.index: target_f.joining_iso
+                                * self.isos[i]
+                                * f.joining_iso.inverse()
+                            }
+                        )
                         compute_adjacent_maps(f.adjacent_pol.index)
                     else:
                         self.unmapped.append(f.adjacent_pol.index)
@@ -296,12 +402,20 @@ class Tessellated_manifold_isometry:
             compute_adjacent_maps(i)
 
     def inverse(self):
-        return Tessellated_manifold_isometry(self.manifold, images={v.index: self.manifold.polytopes[k] for k, v in self.images.items()}, isos={self.images[k].index: v.inverse() for k, v in self.isos.items()})
+        return Tessellated_manifold_isometry(
+            self.manifold,
+            images={
+                v.index: self.manifold.polytopes[k] for k, v in self.images.items()
+            },
+            isos={self.images[k].index: v.inverse() for k, v in self.isos.items()},
+        )
 
     def __eq__(self, other):
         for k in self.images:
             # Only need to check one element
-            return self.images.get(k) == other.images.get(k) and self.isos.get(k) == other.isos.get(k)
+            return self.images.get(k) == other.images.get(k) and self.isos.get(
+                k
+            ) == other.isos.get(k)
 
         return other.images == {}
 
@@ -315,12 +429,20 @@ class Tessellated_manifold_isometry:
             else:
                 return None
 
-
     def __mul__(self, other):
-        return Tessellated_manifold_isometry(self.manifold, images={k: self.images.get(v.index) for k, v in other.images.items()}, isos={k: self.isos.get(v.index)*other.isos.get(k) for k, v in other.images.items() if v.index in self.isos})
+        return Tessellated_manifold_isometry(
+            self.manifold,
+            images={k: self.images.get(v.index) for k, v in other.images.items()},
+            isos={
+                k: self.isos.get(v.index) * other.isos.get(k)
+                for k, v in other.images.items()
+                if v.index in self.isos
+            },
+        )
 
     def __bool__(self):
         return bool(self.images)
+
 
 class Tessellated_manifold_isometry_group:
     def __init__(self, *generators, iterations=-1):
@@ -332,14 +454,15 @@ class Tessellated_manifold_isometry_group:
         It can also be stopped by pressing Ctrl-C, if you are sure that every element is already been found.
         """
         new_elements = list(generators)
-        id = generators[0]*generators[0].inverse()
+        id = generators[0] * generators[0].inverse()
         if id not in new_elements:
-            new_elements.append(generators[0]*generators[0].inverse())
+            new_elements.append(generators[0] * generators[0].inverse())
         self.elements = []
 
         original_sigint_handler = signal.getsignal(signal.SIGINT)
         global interrupted
         interrupted = False
+
         def sigint_handler(sig, frame):
             global interrupted
             interrupted = True
@@ -352,16 +475,27 @@ class Tessellated_manifold_isometry_group:
             iterations -= 1
             found = []
             for a, b in itertools.product(self.elements + new_elements, new_elements):
-                c = a*b.inverse()
+                c = a * b.inverse()
                 if c is not None and c not in self.elements + new_elements + found:
                     found.append(c)
-                    print("Found {} new elements, total {}...".format(len(found), len(found) + len(self.elements) + len(new_elements)), end="\r")
+                    print(
+                        "Found {} new elements, total {}...".format(
+                            len(found),
+                            len(found) + len(self.elements) + len(new_elements),
+                        ),
+                        end="\r",
+                    )
                 if interrupted:
                     break
             self.elements += new_elements
             new_elements = found
-            print("Found {num} new elements, total {tot}.  ".format(num=len(new_elements), tot = len(self.elements)+len(new_elements)), end="\b")
-        print('Done.')
+            print(
+                "Found {num} new elements, total {tot}.  ".format(
+                    num=len(new_elements), tot=len(self.elements) + len(new_elements)
+                ),
+                end="\b",
+            )
+        print("Done.")
         signal.signal(signal.SIGINT, original_sigint_handler)
         self.elements += new_elements
 
