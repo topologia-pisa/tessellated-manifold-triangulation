@@ -143,12 +143,20 @@ class P5_facet(AbstractFacet):
             (1, -1, -1, 1): 2,
             (1, 1, 1, -1): 7,
             (1, 1, -1, -1): 3,
+            # (1, -1, -1, -1): 0,
+            # (-1, -1, -1, -1): 4,
+            # (-1, 1, -1, -1): 1,
+            # (-1, 1, -1, 1): 5,
+            # (-1, -1, 1, -1): 2,
+            # (-1, 1, 1, -1): 6,
+            # (-1, -1, -1, 1): 3,
+            # (-1, -1, 1, 1): 7,
         }
         x = self.index[0:4]
         if x in dict:
             return dict[x]
         else:
-            return dict[tuple(-i for i in x)]
+            return (dict[tuple(-i for i in x)] + 4) % 8
 
     color = property(get_color)
 
