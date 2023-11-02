@@ -1,7 +1,10 @@
+from abc import ABC, abstractmethod, abstractproperty
+from typing import Any, Callable, Dict, List, Tuple, Type, cast
 import regina, itertools, signal
 from regina import Triangulation5
 from regina.engine import Face5_0, Simplex5
-from sage.all import SimplicialComplex
+from sage.all import Graph, SimplicialComplex
+from sage.modular.pollack_stevens.space import ManinMap
 
 
 def get_link(vertex):
@@ -114,10 +117,10 @@ class AbstractPolytopeIsometry:
         )
 
 
-class AbstractPolytope:
-    dimension = None
-    facet_class = None
-    facet_graph = None
+class AbstractPolytope(ABC):
+    dimension: int
+    facet_class: Type["AbstractFacet"]
+    facet_graph: Graph
 
     def __init__(self):
         self.facets = {
@@ -132,8 +135,8 @@ class AbstractPolytope:
             self.facets[f1].interior_join(self.facets[f2])
 
 
-class AbstractFacet:
-    def __init__(self, index, pol):
+class AbstractFacet(ABC):
+    def __init__(self, index, pol: AbstractPolytope):
         self.index = index
         self.pol = pol
         self.state = None
@@ -165,8 +168,24 @@ class AbstractFacet:
         raise NotImplementedError()
 
 
+class Cell(AbstractPolytope):
+    manifold: "Tessellated_manifold"
+    index: int
+
+
+class Panel(AbstractFacet):
+    polytope: Cell
+    state: bool | None
+
+
 class Tessellated_manifold:
-    def __init__(self, polytope, indices, pasting_map, state=None):
+    def __init__(
+        self,
+        polytope: Type[AbstractPolytope],
+        indices: List[Any],
+        pasting_map: Callable[[AbstractFacet], Tuple[Cell, AbstractPolytopeIsometry]],
+        state: Callable[[AbstractFacet], bool] | None = None,
+    ):
         """
         Builds a manifold tessellated with copies of polytope, which are indexed by indices.
         pasting_map takes a facet as input and must return a 2-uple (glued polytope, isomorphism),
@@ -174,10 +193,10 @@ class Tessellated_manifold:
         state, if provided, takes a facet as input and return True if it is pointing outwards, False if inwards.
         """
         self.polytope_class = polytope
-        self.polytopes = {}
+        self.polytopes: Dict[Any, Cell] = {}
 
         for i in indices:
-            self.polytopes[i] = polytope()
+            self.polytopes[i] = cast(Cell, polytope())
             self.polytopes[i].index = i
             self.polytopes[i].manifold = self
 

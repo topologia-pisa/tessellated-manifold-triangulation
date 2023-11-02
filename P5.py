@@ -1,4 +1,5 @@
 import itertools, json, os, sys
+from typing import Dict, List, Literal, Tuple
 from sage.all import product, QuaternionAlgebra, Matrix, Permutation, vector, Graph
 from regina import Perm4, Perm5, Perm6, Triangulation5
 from tessellation import AbstractPolytopeIsometry, AbstractPolytope, AbstractFacet
@@ -16,11 +17,18 @@ with open(os.path.join(sys.path[0], "ratcliffe-tschantz.json")) as f:
 
 class P5_iso(AbstractPolytopeIsometry):
     """
-    Defines an isomophism of P5 that permutes components and
-    reflects along certain coordinate hyperplanes.
+    Defines an isomophism of P5.
+    It is descibed by the composition of reflections on coordinate
+    hyperplanes and permutations of coordinates.
+
+    Args:
+        refl: a list of 5 signs, one for each coordinate hyperplane
+        perm: a permutation of the coordinates
     """
 
-    def __init__(self, refl=[1, 1, 1, 1, 1], perm=Perm5()):
+    def __init__(
+        self, refl: List[Literal[1, -1]] = [1, 1, 1, 1, 1], perm: Perm5 = Perm5()
+    ):
         if len(refl) == 4:
             refl.append(product(refl))
         assert len(refl) == 5 and product(refl) == 1, "Invalid reflection"
@@ -32,6 +40,9 @@ class P5_iso(AbstractPolytopeIsometry):
         self.perm = perm
 
     def inverse(self):
+        """
+        Returns the inverse isomorphism.
+        """
         phi = P5_iso(perm=self.perm.inverse())
         psi = P5_iso(self.refl)
         inv = phi * psi
@@ -40,7 +51,14 @@ class P5_iso(AbstractPolytopeIsometry):
         return inv
 
     @classmethod
-    def from_lorentzian_matrix(cls, mat):
+    def from_lorentzian_matrix(cls, mat: Matrix[5, 5, int]) -> "P5_iso":
+        """
+        Returns the isomorphism corresponding to the given
+        Lorentzian matrix.
+
+        Args:
+            mat: a 5x5 matrix with determinant 1 and signature (4,1)
+        """
         cusps = [vector({i: 1, 5: 1}) for i in range(5)]
         cusps += [vector([1, 1, 1, 1, 1, 3]) - x for x in cusps]
         assert sorted(cusps) == sorted(mat * v for v in cusps), mat
@@ -78,12 +96,14 @@ class P5_iso(AbstractPolytopeIsometry):
 
 
 class P5_facet(AbstractFacet):
-    def triangulate(self, tri):
+    pol: "P5"
+
+    def triangulate(self, tri: Triangulation5):
         """
         Triangulates the cone on a facet of P5 with six simplices:
         a central one and five attached to the facets of the central
         one (all but one, which coincides with the external facet of
-        P5.
+        P5).
         The vertex 0 always corresponds to the vertex in the center
         of P5.
         """
@@ -92,7 +112,7 @@ class P5_facet(AbstractFacet):
         for i in range(1, 6):
             self.simplices[0].join(i, self.simplices[i], Perm6())
 
-    def interior_join(self, other_facet):
+    def interior_join(self, other_facet: "P5_facet"):
         """
         Pastes together two triangulations of two adiacents facets
         of the same P5.
@@ -104,7 +124,7 @@ class P5_facet(AbstractFacet):
         self.simplices[a].join(b, other_facet.simplices[b], Perm6(a, b))
         self.simplices[b].join(a, other_facet.simplices[a], Perm6(a, b))
 
-    def interior_unjoin(self, other_facet):
+    def interior_unjoin(self, other_facet: "P5_facet"):
         """
         Unglue two facets which were adjacent in the same P5.
         """
@@ -112,13 +132,7 @@ class P5_facet(AbstractFacet):
         self.simplices[a].unjoin(b)
         self.simplices[b].unjoin(a)
 
-    def exterior_join(self, other_pol, iso):
-        """
-        Pastes together two triangulations of facets of P5
-        which are glued together via some pasting isomophism.
-        This means we have to glue all the simplices in pairs
-        along the facet 0 (opposite to the central vertex).
-        """
+    def exterior_join(self, other_pol: "P5", iso: P5_iso) -> None:
         target_f = iso(self, other_pol)
         extended_perm = (
             Perm6([1, 2, 3, 4, 5, 0])
@@ -141,7 +155,7 @@ class P5_facet(AbstractFacet):
         """
         Returns the color of the face.
         """
-        dict = {
+        dict: Dict[Tuple, int] = {
             (1, 1, 1, 1): 0,
             (-1, 1, 1, 1): 4,
             (1, -1, 1, 1): 5,
@@ -181,7 +195,7 @@ class P5_facet(AbstractFacet):
 
     label = property(get_label)
 
-    def get_reflection_matrix(self):
+    def get_reflection_matrix(self) -> Matrix[6, 6, int]:
         """
         Returns a reflection matrix representing the
         reflection along this facet, using Ratcliffe
