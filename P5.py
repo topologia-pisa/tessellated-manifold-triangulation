@@ -53,7 +53,7 @@ class P5_iso(AbstractPolytopeIsometry):
 
     def __mul__(self, other):
         return P5_iso(
-            [self.refl[i] * other.refl[self.perm.preImageOf(i)] for i in range(5)],
+            [self.refl[i] * other.refl[self.perm.pre(i)] for i in range(5)],
             self.perm * other.perm,
         )
 
@@ -66,7 +66,7 @@ class P5_iso(AbstractPolytopeIsometry):
             other_pol = arg.pol
 
         # Pemutates coordinates
-        coords = tuple(arg.index[self.perm.preImageOf(i)] for i in range(5))
+        coords = tuple(arg.index[self.perm.pre(i)] for i in range(5))
 
         # Reflect coordinates
         coords = tuple(x * y for x, y in zip(self.refl, coords))
@@ -126,11 +126,18 @@ class P5_facet(AbstractFacet):
             * Perm6([5, 0, 1, 2, 3, 4])
         )
         for i in range(6):
-            self.simplices[i].join(
-                0, target_f.simplices[extended_perm[i]], extended_perm
-            )
+            if self.simplices[i].adjacentSimplex(0) is None:
+                self.simplices[i].join(
+                    0, target_f.simplices[extended_perm[i]], extended_perm
+                )
+            else:
+                assert (
+                    self.simplices[i].adjacentSimplex(0)
+                    == target_f.simplices[extended_perm[i]]
+                )
+                assert self.simplices[i].adjacentGluing(0) == extended_perm
 
-    def get_color(self):
+    def get_color(self) -> int:
         """
         Returns the color of the face.
         """
