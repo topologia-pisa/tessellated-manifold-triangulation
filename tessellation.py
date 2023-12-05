@@ -1,19 +1,22 @@
+from abc import ABC, abstractmethod
 import regina, itertools, signal
-from regina import Triangulation5
+from regina.engine import Triangulation5
 from regina.engine import Face5_0, Simplex5
-from sage.all import SimplicialComplex
+from sage.all import Permutation, SimplicialComplex
+from sage.misc.edit_module import re
 
 
-def get_link(vertex):
+def get_link(vertex: Face5_0):
     """
     Gets the link of a vertex by hand, since Regina
     did not support it in high dimension.
     """
     d = vertex.triangulation().dimension
-    embeddings = vertex.embeddings()
+    embeddings = vertex.embeddings()  # Find all simplices containing the vertex
     link_simplices = {}
-    link = regina.__getattribute__("Triangulation" + str(d - 1))()
+    link = regina.engine.__getattribute__("Triangulation" + str(d - 1))()
     for e in embeddings:
+        # For every simplex containing the vertex, we create a simplex in the link
         assert (e.simplex().index(), e.vertex()) not in link_simplices.keys()
         link_simplices[(e.simplex().index(), e.vertex())] = link.newSimplex()
 
@@ -34,12 +37,18 @@ def get_link(vertex):
                     for j in range(d)
                 ]
                 assert sorted(p) == list(range(d))
-                Permutation = regina.__getattribute__("Perm" + str(d))
-                link_simplices[(s.index(), e.vertex())].join(
-                    old_simplex_vertices.index(i),
-                    link_simplices[(adj_s.index(), s.adjacentGluing(i)[e.vertex()])],
-                    Permutation(*p) if d <= 5 else Permutation(p),
-                )
+                Permutation = regina.engine.__getattribute__("Perm" + str(d))
+                try:
+                    link_simplices[(s.index(), e.vertex())].join(
+                        old_simplex_vertices.index(i),
+                        link_simplices[
+                            (adj_s.index(), s.adjacentGluing(i)[e.vertex()])
+                        ],
+                        Permutation(*p) if d <= 5 else Permutation(p),
+                    )
+                except regina.engine.InvalidArgument:
+                    # The simplex was already glued, so we skip this step
+                    pass
 
     return link
 
@@ -47,7 +56,7 @@ def get_link(vertex):
 Face5_0.get_link = get_link
 
 
-def identify_with(simplex1, simplex2, perm):
+def identify_with(simplex1, simplex2, perm: Permutation):
     """Removes simplex1 and glue adjacent simplices to simplex2"""
     d = simplex1.triangulation().dimension
     if simplex1 == simplex2:
@@ -89,29 +98,25 @@ def simplicial_complex_from_triangulation(triangulation):
 Triangulation5.get_simplicial_complex = simplicial_complex_from_triangulation
 
 
-class AbstractPolytopeIsometry:
-    def inverse(self):
-        raise NotImplementedError(
-            "Please implement inverse function in the appropriate subclass."
-        )
+class AbstractPolytopeIsometry(ABC):
+    @abstractmethod
+    def inverse(self) -> "AbstractPolytopeIsometry":
+        pass
 
-    def __eq__(self, other):
-        raise NotImplementedError(
-            "Please implement __eq__ function in the appropriate subclass."
-        )
+    @abstractmethod
+    def __eq__(self, other) -> bool:
+        pass
 
-    def __mul__(self, other):
-        raise NotImplementedError(
-            "Please implement __mul__ function in the appropriate subclass."
-        )
+    @abstractmethod
+    def __mul__(self, other) -> "AbstractPolytopeIsometry":
+        pass
 
-    def __call__(self, arg, other_pol):
+    @abstractmethod
+    def __call__(self, arg, other_pol) -> "AbstractFacet":
         """
         Should return the image of a facet in the polytope other_pol (if omitted, self should be used).
         """
-        raise NotImplementedError(
-            "Please implement __call__ function in the appropriate subclass."
-        )
+        pass
 
 
 class AbstractPolytope:
